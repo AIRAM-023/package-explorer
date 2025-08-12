@@ -1,0 +1,27 @@
+name: TODO Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check-todos:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0.x'  # or your required version
+
+    - name: Restore .NET local tools
+      run: dotnet tool restore
+
+    - name: Run TODO check script
+      shell: pwsh
+      run: .\src\CheckTodos.ps1
