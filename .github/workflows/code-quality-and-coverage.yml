@@ -1,0 +1,54 @@
+name: Code Quality & Coverage
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  quality-and-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- STEP 1: Checkout the repo ---
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # --- STEP 2: Set up Java ---
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      # --- STEP 3: Checkstyle ---
+      - name: Run Checkstyle
+        run: |
+          curl -LJO https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.17.0/checkstyle-10.17.0-all.jar
+          java -jar checkstyle-10.17.0-all.jar -c /google_checks.xml src/
+
+      # --- STEP 4: PMD ---
+      - name: Run PMD
+        run: |
+          curl -LJO https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.56.0/pmd-bin-6.56.0.zip
+          unzip pmd-bin-6.56.0.zip
+          ./pmd-bin-6.56.0/bin/run.sh pmd -d src/ -R rulesets/java/quickstart.xml -f text
+
+      # --- STEP 5: Ptidej ---
+      - name: Run Ptidej
+        run: |
+          curl -LJO https://ptidej.com/downloads/ptidej.jar
+          java -jar ptidej.jar -d src/
+
+      # --- STEP 6: Build & Test with Coverage ---
+      - name: Build with Maven (JaCoCo coverage)
+        run: mvn clean verify
+
+      # --- STEP 7: Upload coverage to Codecov ---
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: target/site/jacoco/jacoco.xml
+          fail_ci_if_error: true
